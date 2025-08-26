@@ -1,0 +1,13 @@
+import PostsTable from "@/components/posts/PostsTable";
+import PostsPagination from "@/components/posts/PostsPagination";
+
+const PostsPage =() => {
+    return ( 
+        <>
+            <PostsTable />
+            <PostsPagination />
+        </>
+     );
+};
+
+export default PostsPage;
