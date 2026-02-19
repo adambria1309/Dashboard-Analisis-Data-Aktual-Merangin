@@ -17,14 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-      <ThemeProvider attribute='class'
-      defaultTheme='light' enableSystem={false}
-      storageKey='dashboard-theme'>
-        { children }
-        <Toaster />
-      </ThemeProvider>
+    <html lang="en">
+      <body className={inter.className} suppressHydrationWarning>
+        {children}
       </body>
     </html>
   );

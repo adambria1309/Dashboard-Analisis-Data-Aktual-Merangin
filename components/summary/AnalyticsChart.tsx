@@ -2,12 +2,12 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Label} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader,CardTitle} from '@/components/ui/card';
-import dataPdrb from '@/data/pdrb';
+import dataPdrb from '@/data/pdrb_lu';
 import dataSoceko from '@/data/socioeko';
 import dataMap from '@/data/jambi_kecamatan.json';
 import type {Topology} from 'topojson-specification';
 import { sectorKeys, SectorKey } from '@/types/sectorkey';
-import StatPdrb from './StatPdrb';
+import StatPdrb from './StatPdrbLu';
 import MapStat from "./MapStat";
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom'; //render componnent di 'body' sehingga tidak terpengaruh dengan tailwind dan shadcn ui
@@ -121,7 +121,7 @@ const AnalyticsChart: React.FC = () => {
 
     return ( 
     <>
-    <div className='mt-[-3%] grid grid-cols-5 grid-rows-1 gap-5'>
+    <div className='mt-[0%] grid grid-cols-5 grid-rows-1 gap-5'>
         <Card className='w-full col-span-3 col-start-1 bg-blue-50/60 backdrop-filter backdrop-blur-md'>
             <CardHeader>
                 <div className='grid grid-col-1 grid-row-2 gap-y-2 bg-white/50 backdrop-filter backdrop-blur-md border-1 border-blue-100 rounded-md mt-[-2.5%]'>

@@ -1,7 +1,7 @@
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, 
   CommandItem, CommandList, CommandSeparator,
   CommandShortcut} from "@/components/ui/command";
-import {LayoutDashboard, Newspaper, Folders, Settings, User} from 'lucide-react';
+import {LayoutDashboard, Newspaper, Folders, Settings, User, Menu, X} from 'lucide-react';
 import Link from "next/link";
 
 const Sidebar = () => {
@@ -14,7 +14,15 @@ const Sidebar = () => {
                 <CommandGroup heading="Utama">
                 <CommandItem>
                     <LayoutDashboard className="mr-2 h-4 w-4"/>
-                    <Link href='/'>Dashboard</Link>
+                    <Link href='/'>Home</Link>
+                </CommandItem>
+                <CommandItem>
+                    <LayoutDashboard className="mr-2 h-4 w-4"/>
+                    <Link href='/summary'>Summary Dashboard</Link>
+                </CommandItem>
+                <CommandItem>
+                    <LayoutDashboard className="mr-2 h-4 w-4"/>
+                    <Link href='/economics'>Economics Dashboard</Link>
                 </CommandItem>
                 {/* <CommandItem>
                     <Newspaper className="mr-2 h-4 w-4"/>

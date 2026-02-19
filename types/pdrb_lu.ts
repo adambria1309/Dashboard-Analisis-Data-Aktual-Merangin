@@ -1,4 +1,4 @@
-export interface PdrbItem {
+export interface PdrbLuItem {
     Tahun: number,
     A: number,
     B: number,

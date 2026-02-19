@@ -1,6 +1,6 @@
-import { PdrbItem } from '@/types/pdrb';
+import { PdrbLuItem } from '@/types/pdrb_lu';
 
-const dataPdrb: PdrbItem[] = [
+const dataPdrbLu: PdrbLuItem[] = [
  {
   Tahun: 2016,
   A: 4189.8,
@@ -192,4 +192,4 @@ const dataPdrb: PdrbItem[] = [
  }
 ]
 
-export default dataPdrb;
+export default dataPdrbLu;
