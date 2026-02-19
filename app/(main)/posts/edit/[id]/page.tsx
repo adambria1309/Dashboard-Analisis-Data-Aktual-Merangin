@@ -1,16 +1,17 @@
-import EditPostForm from '@/components/EditPostForm'; // Client Component
+import EditPostForm from '@/components/EditPostForm';
 import posts from '@/data/posts';
 
 interface PostEditPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-const PostEditPage = ({ params }: PostEditPageProps) => {
-  const post = posts.find((post) => post.id === params.id);
+const PostEditPage = async ({ params }: PostEditPageProps) => {
+  const { id } = await params;
 
-  // Opsional: handle jika post tidak ditemukan
+  const post = posts.find((post) => post.id === id);
+
   if (!post) {
     return <div>Post not found.</div>;
   }
