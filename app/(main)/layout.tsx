@@ -2,24 +2,33 @@
 
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import NavbarHome from "@/components/NavbarHome";
 import Sidebar from "@/components/Sidebar";
+import { DashboardDataProvider } from "@/components/DashboardDataContext";
+import { ReferenceYearProvider, ReferenceYearSelect } from "@/components/ReferenceYearContext";
 
-const MainLayout =({ children }: { children: React.ReactNode }) => {
+const MainLayout = ({ children }: { children: React.ReactNode }) => {
     const pathname = usePathname();
-    const showSidebar = pathname !== '/';
-    const showNavbarHome = pathname !== '/';
+    const isHome = pathname === "/";
+    const isAnalysisPage = pathname === "/summary" || pathname === "/economics";
+
     return (
         <>
-            {showNavbarHome?<Navbar />:<NavbarHome />}
-            <div className="flex">
-                <div className="hidden md:block h-[150vh] w-[300px]">
-                {showSidebar && <Sidebar />}
-            </div>
-            <div className="p-5 w-full md:max-w-[1140px]">
-                {children}
-            </div>
-            </div>
+            <Navbar currentPath={pathname} />
+            <DashboardDataProvider key={isAnalysisPage ? "analysis" : "inactive"} enabled={isAnalysisPage}>
+                <ReferenceYearProvider key={pathname}>
+                    <div className={isHome ? "w-full" : "mx-auto flex w-full max-w-[1600px] items-start gap-6 px-4 py-6 sm:px-6 lg:px-8"}>
+                        {!isHome && (
+                            <aside className="sticky top-24 hidden w-60 shrink-0 md:block" aria-label="Navigasi dashboard">
+                                <Sidebar />
+                            </aside>
+                        )}
+                        <main className="min-w-0 flex-1">
+                            {isAnalysisPage && <ReferenceYearSelect />}
+                            {children}
+                        </main>
+                    </div>
+                </ReferenceYearProvider>
+            </DashboardDataProvider>
         </>
     );
 };

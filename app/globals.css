@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@source not "../.next-preview";
+@source not "../.next-live-preview";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -122,65 +125,39 @@
 }
 
 body {
-  background: white; /* Main page color */
+  min-height: 100vh;
   overflow-x: hidden;
   margin: 0;
 }
 
-/* Container to hold gradient + waves */
-.wave-container {
-  position: absolute;
-  top: 50%; /* Starting from middle */
-  left: 0;
-  width: 100%;
-  height: 50%; /* Covers lower half */
-  background: linear-gradient(to bottom, transparent, rgba(173, 216, 230, 0.4)); /* Smooth light blue */
-  z-index: 0;
+.skeleton-shimmer {
+  background-color: var(--muted);
+  background-image: linear-gradient(
+    105deg,
+    transparent 25%,
+    color-mix(in oklab, var(--background) 72%, transparent) 45%,
+    transparent 65%
+  );
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.65s ease-in-out infinite;
 }
 
-@keyframes waveMove {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
 }
 
-.wave {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 200%;
-  height: 120px;
-  background-repeat: repeat-x;
-  background-size: cover;
-  z-index: 1;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
-
-.wave1 {
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'><path fill='%239ec5fe' fill-opacity='0.6' d='M0,96L60,122.7C120,149,240,203,360,218.7C480,235,600,213,720,176C840,139,960,85,1080,69.3C1200,53,1320,75,1380,85.3L1440,96V320H0Z'></path></svg>");
-  animation: waveMove 8s linear infinite;
-}
-
-.wave2 {
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'><path fill='%2366a3ff' fill-opacity='0.8' d='M0,192L60,208C120,224,240,256,360,250.7C480,245,600,203,720,197.3C840,192,960,224,1080,218.7C1200,213,1320,171,1380,149.3L1440,128V320H0Z'></path></svg>");
-  animation: waveMove 12s linear infinite;
-}
-
-@keyframes bubbleFloat {
-  0% { transform: translateY(0) scale(1); opacity: 0.4; }
-  50% { opacity: 0.8; }
-  100% { transform: translateY(-70vh) scale(1.2); opacity: 0; }
-}
-
-.bubble {
-  position: absolute;
-  top: 50%;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  animation: bubbleFloat linear infinite;
-  z-index: 2;
-}
-
-.bubble:nth-child(1n) { background: rgba(173, 216, 230, 0.5); }
-.bubble:nth-child(2n) { background: rgba(135, 206, 250, 0.5); }
-.bubble:nth-child(3n) { background: rgba(100, 149, 237, 0.5); }
-.bubble:nth-child(4n) { background: rgba(70, 130, 180, 0.5); }

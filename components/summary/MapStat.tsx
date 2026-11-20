@@ -3,6 +3,7 @@ import { feature } from 'topojson-client';
 import type { FeatureCollection } from 'geojson';
 import { select, geoPath, geoMercator, scaleSequential, interpolateRgb } from "d3";
 import type { Topology } from "topojson-specification";
+import type { DemographyYearItem } from "@/types/dashboard-data";
 
 interface DataMapProps {
   topojsonData: Topology;
@@ -11,6 +12,8 @@ interface DataMapProps {
   variable?: string;
   mainColor?: string;  
   endColor?: string; 
+  demografiData?: DemographyYearItem[];
+  dataYear?: number;
 }
 
 const variableOptions = [
@@ -25,8 +28,11 @@ const MapStat: React.FC<DataMapProps> = ({
         topojsonData, 
         width = 1200, 
         height = 1200,mainColor = '#c7f0c4',  // default: light green
-        endColor = '#086d36'
+        endColor = '#086d36',
+        demografiData,
+        dataYear = 2019,
     }) => {
+    const hasDataForYear = dataYear === 2019 || Boolean(demografiData?.length);
     const svgRef = useRef<SVGSVGElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const tooltipRef = useRef<HTMLDivElement | null>(null);
@@ -38,17 +44,40 @@ const MapStat: React.FC<DataMapProps> = ({
 
         const svg = select(svgRef.current);
         svg.selectAll('*').remove();
+        if (legendRef.current) legendRef.current.innerHTML = '';
+        if (!hasDataForYear) return;
 
         const geojson = feature(
         topojsonData,
         topojsonData.objects[Object.keys(topojsonData.objects)[0]]
         ) as FeatureCollection;
 
+        if (demografiData?.length) {
+          const valuesByDistrict = new Map(
+            demografiData.map((row) => [row.Kecamatan.trim().replace(/\s+/g, " ").toLocaleUpperCase("id-ID"), row]),
+          );
+          for (const mapFeature of geojson.features) {
+            const properties = mapFeature.properties;
+            const name = properties?.nmkec;
+            if (typeof name !== "string") continue;
+            const row = valuesByDistrict.get(name.trim().replace(/\s+/g, " ").toLocaleUpperCase("id-ID"));
+            if (!row || !properties) continue;
+            Object.assign(properties, {
+              Jumlah_Pen: row.Jumlah_Pen,
+              Laju_Pertu: row.Laju_Pertu,
+              Persentase: row.Persentase,
+              Kepadata_: row.Kepadata_,
+              Rasio_Jeni: row.Rasio_Jeni,
+              periode: String(dataYear),
+            });
+          }
+        }
+
         const values = geojson.features.map(f => (f.properties?.[selectedVariable] as number) ?? 0);
         const minValue = Math.min(...values);
         const maxValue = Math.max(...values);
 
-        const projection = geoMercator().fitSize([width, 0.7*height], geojson);
+        const projection = geoMercator().fitSize([width, height], geojson);
         const path = geoPath().projection(projection);
         const color = scaleSequential(
             interpolateRgb(mainColor, endColor)
@@ -121,34 +150,30 @@ const MapStat: React.FC<DataMapProps> = ({
 
         legend.appendChild(legendRow);
         }
-    }, [topojsonData, width, height, selectedVariable]);
+    }, [topojsonData, width, height, selectedVariable, mainColor, endColor, demografiData, dataYear, hasDataForYear]);
 
 
   return (
     <>  
-        <div ref={containerRef} className="grid grid-col-1 grid-row-[10%,90%] gap-y-1 w-full h-[75vh] bg-emerald-100/20 backdrop-filter backdrop-blur-md border-2 border-blue-100 dark:bg-blue-800 rounded-md">
-        <div className="flex justify-center items-center ">
-            <div className='w-[95%] h-[10vh] pb-0 grid grid-row-2 grid-col-1 gap-y-0 bg-white/50 backdrop-filter backdrop-blur-md border-2 border-blue-100 rounded-md mt-[2%]'>
-                <div className=''>
-                    <h2 className="text-center font-bold text-[#0ea849ff] dark:text-blue-200">
-                        Demografi
-                    </h2>
-                </div>
-                <div className='flex justify-center items-center'>
-                    <hr className='w-[95%] h-1 border-[#0ea849ff] dark:border-white'/>
-                </div>
-                <div className=''>
-                    <h2 className="text-center font-bold text-[#0ea849ff] dark:text-blue-200">
-                        Kependudukan
-                    </h2>
-                </div>
-            </div>
+        <div id="demografi" ref={containerRef} className="relative flex h-full min-w-0 flex-col gap-3 rounded-xl border border-blue-200 bg-emerald-50 p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md dark:bg-blue-950 dark:hover:border-emerald-700">
+        <div className="rounded-lg border border-blue-100 bg-white/70 p-3 dark:bg-blue-900/70">
+            <h2 className="text-center font-semibold text-emerald-800 dark:text-blue-100">
+                Demografi dan Kependudukan
+            </h2>
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+                Data peta kecamatan · {dataYear}
+            </p>
         </div>
-        <div className="p-2">
+        <div className="grid gap-1">
+            <label htmlFor="variable-select" className="text-sm font-medium text-emerald-900 dark:text-blue-100">
+                Pilih indikator
+            </label>
             <select
             id="variable-select"
-            className="w-full p-2 rounded bg-[#0ea849ff] text-white font-semibold border mt-[-5%]"
+            aria-label="Pilih indikator kependudukan"
+            className="min-h-11 w-full min-w-0 rounded-md border border-emerald-700 bg-emerald-700 px-3 py-2 text-sm font-medium text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             value={selectedVariable}
+            disabled={!hasDataForYear}
             onChange={(e) => setSelectedVariable(e.target.value)}
             >
             {variableOptions.map((opt) => (
@@ -156,16 +181,27 @@ const MapStat: React.FC<DataMapProps> = ({
             ))}
             </select>
         </div>
-        <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-[110%] mt-[2%]"/>
-        <div
-            ref={tooltipRef}
-            className="absolute pointer-events-none bg-black text-white text-sm p-2 rounded opacity-0 transition-opacity duration-200"
-            style={{left:0, top:0}}
-        />
-        <div
-            ref={legendRef}
-            className="absolute bottom-2 left-5 bg-gray-600/80 p-2 rounded space-y-1"
-        />
+        {hasDataForYear ? (
+            <>
+                <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="h-[clamp(18rem,28vw,20rem)] w-full shrink-0"/>
+                <div
+                    ref={tooltipRef}
+                    className="pointer-events-none absolute z-10 rounded bg-black p-2 text-sm text-white opacity-0 transition-opacity duration-200"
+                    style={{left:0, top:0}}
+                />
+                <div
+                    ref={legendRef}
+                    className="mx-auto w-fit max-w-full overflow-x-auto rounded-lg bg-gray-800/85 p-2 shadow-sm"
+                />
+            </>
+        ) : (
+            <div
+                role="status"
+                className="flex h-[clamp(18rem,28vw,20rem)] items-center justify-center rounded-lg border border-dashed border-emerald-300 bg-white/60 px-5 text-center text-sm leading-6 text-emerald-900 dark:border-emerald-800 dark:bg-slate-900/40 dark:text-emerald-100"
+            >
+                Data demografi kecamatan tahun {dataYear} belum tersedia. Unggah data kecamatan untuk tahun ini agar peta dapat ditampilkan.
+            </div>
+        )}
         </div>
     </>
   );

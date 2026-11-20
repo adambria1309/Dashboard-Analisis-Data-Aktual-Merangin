@@ -1,55 +1,56 @@
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, 
-  CommandItem, CommandList, CommandSeparator,
-  CommandShortcut} from "@/components/ui/command";
-import {LayoutDashboard, Newspaper, Folders, Settings, User, Menu, X} from 'lucide-react';
-import Link from "next/link";
+"use client";
+
+import { usePathname, useRouter } from "next/navigation";
+import { ChartNoAxesColumn, Download, Home, LayoutDashboard } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+
+const navigationItems = [
+  { href: "/", label: "Beranda", icon: Home, depth: 0 },
+  { href: "/summary", label: "Dashboard Ringkasan", icon: LayoutDashboard, depth: 0 },
+  { href: "/economics", label: "Dashboard Ekonomi", icon: ChartNoAxesColumn, depth: 0 },
+  { href: "/downloads", label: "Download Data", icon: Download, depth: 0 },
+];
 
 const Sidebar = () => {
-    return (
-        <>
-        <Command className="bg-secondary rounded-none">
-            <CommandInput placeholder="Type a command or search..." />
-            <CommandList>
-                <CommandEmpty>No results found.</CommandEmpty>
-                <CommandGroup heading="Utama">
-                <CommandItem>
-                    <LayoutDashboard className="mr-2 h-4 w-4"/>
-                    <Link href='/'>Home</Link>
-                </CommandItem>
-                <CommandItem>
-                    <LayoutDashboard className="mr-2 h-4 w-4"/>
-                    <Link href='/summary'>Summary Dashboard</Link>
-                </CommandItem>
-                <CommandItem>
-                    <LayoutDashboard className="mr-2 h-4 w-4"/>
-                    <Link href='/economics'>Economics Dashboard</Link>
-                </CommandItem>
-                {/* <CommandItem>
-                    <Newspaper className="mr-2 h-4 w-4"/>
-                    <Link href='/posts'>Posts</Link>
-                </CommandItem> */}
-                <CommandItem>
-                    <Folders className="mr-2 h-4 w-4"/>
-                    <Link href='/'>Metadata</Link>
-                </CommandItem>
-                </CommandGroup>
-                <CommandSeparator />
-                {/* <CommandGroup heading="Settings">
-                <CommandItem>
-                    <User className="mr-2 h-4 w-4"/>
-                    <span>Profile</span>
-                    <CommandShortcut>P</CommandShortcut>
-                </CommandItem>
-                <CommandItem>
-                    <Settings className="mr-2 h-4 w-4"/>
-                    <span>Settings</span>
-                    <CommandShortcut>S</CommandShortcut>
-                </CommandItem>
-                </CommandGroup> */}
-            </CommandList>
-        </Command>
-        </>
-    );
+  const pathname = usePathname();
+  const router = useRouter();
+
+  return (
+    <Command className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
+      <CommandInput placeholder="Cari halaman..." aria-label="Cari halaman" />
+      <CommandList className="max-h-none p-2">
+        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+          Halaman tidak ditemukan.
+        </CommandEmpty>
+        <CommandGroup heading="Navigasi">
+          {navigationItems.map(({ href, label, icon: Icon, depth }) => {
+            const isActive = pathname === href;
+            const isSubmenu = depth > 0;
+
+            return (
+              <CommandItem
+                key={href}
+                value={label}
+                onSelect={() => router.push(href)}
+                className={`min-h-10 cursor-pointer rounded-md px-3 ${isSubmenu ? "ml-4 border-l-2 border-slate-200 pl-4 text-sm dark:border-slate-700" : ""} ${isActive ? "bg-sky-100 font-medium text-sky-900 dark:bg-sky-900/50 dark:text-sky-100" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon aria-hidden="true" className="mr-2 size-4" />
+                <span>{label}</span>
+              </CommandItem>
+            );
+          })}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
 };
 
 export default Sidebar;

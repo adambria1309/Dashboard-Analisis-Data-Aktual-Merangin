@@ -1,5 +1,6 @@
 import EditPostForm from '@/components/EditPostForm';
 import posts from '@/data/posts';
+import { requireAdmin } from '@/lib/auth';
 
 interface PostEditPageProps {
   params: Promise<{
@@ -8,6 +9,7 @@ interface PostEditPageProps {
 }
 
 const PostEditPage = async ({ params }: PostEditPageProps) => {
+  await requireAdmin();
   const { id } = await params;
 
   const post = posts.find((post) => post.id === id);

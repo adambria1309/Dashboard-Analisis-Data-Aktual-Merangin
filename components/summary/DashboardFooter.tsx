@@ -1,15 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const DashboardFooter: React.FC = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
-
-  useEffect(() => {
-    if (!hasOpenedOnce) {
-      setShowModal(true);
-      setHasOpenedOnce(true);
-    }
-  }, [hasOpenedOnce]);
+  const [showModal, setShowModal] = useState(true);
 
   return (
     <>

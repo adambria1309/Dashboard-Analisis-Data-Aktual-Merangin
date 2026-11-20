@@ -1,206 +1,171 @@
 'use client';
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Label} from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Label} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader,CardTitle} from '@/components/ui/card';
-import dataPdrb from '@/data/pdrb_exp';
-import { ExpKeys, ExpKey } from '@/types/expkey';
+import type { ExpKey } from '@/types/expkey';
+import type { SectorKey } from '@/types/sectorkey';
 import StatPdrb from './StatPdrb';
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom'; //render componnent di 'body' sehingga tidak terpengaruh dengan tailwind dan shadcn ui
+import StatPdrbLu from '@/components/summary/StatPdrbLu';
+import { useState } from 'react';
+import IndicatorSelect, { type IndicatorOption } from '@/components/IndicatorSelect';
+import { useReferenceYear } from '@/components/ReferenceYearContext';
+import { useDashboardData } from '@/components/DashboardDataContext';
+import LaborAnalytics from './LaborAnalytics';
+import PdrbBreakdownChart from './PdrbBreakdownChart';
 
-// interface Props {
-//     selectedPdrb: string;
-//     setSelectedPdrb: (value: string) => void;
-//     selectedSoceko: string;
-//     setSelectedSoceko: (value: string) => void;
-// }
+const optionsPDRBExp: IndicatorOption[] = [
+    { value: "KonsumsiRumahTangga", label: "Konsumsi Rumah Tangga" },
+    { value: "KonsumsiLNPRT", label: "Konsumsi Lembaga Non Profit Rumah Tangga" },
+    { value: "KonsumsiPemerintah", label: "Konsumsi Pemerintah" },
+    { value: "PMTB", label: "Pembentukan Modal Tetap Bruto" },
+    { value: "PerubahanInventori", label: "Perubahan Inventori" },
+    { value: "Ekspor", label: "Ekspor Barang dan Jasa" },
+    { value: "NetEkspor", label: "Net Ekspor" },
+];
+
+const optionsPDRBLu: IndicatorOption[] = [
+    { value: "A", label: "Pertanian, Kehutanan, dan Perikanan (A)" },
+    { value: "B", label: "Pertambangan dan Penggalian (B)" },
+    { value: "C", label: "Industri Pengolahan (C)" },
+    { value: "D", label: "Pengadaan Listrik dan Gas (D)" },
+    { value: "E", label: "Pengadaan Air, Pengelolaan Sampah, Limbah, dan Daur Ulang (E)" },
+    { value: "F", label: "Konstruksi (F)" },
+    { value: "G", label: "Perdagangan Besar dan Eceran; Reparasi Mobil dan Sepeda Motor (G)" },
+    { value: "H", label: "Transportasi dan Pergudangan (H)" },
+    { value: "I", label: "Penyediaan Akomodasi dan Makan Minum (I)" },
+    { value: "J", label: "Informasi dan Komunikasi (J)" },
+    { value: "K", label: "Jasa Keuangan dan Asuransi (K)" },
+    { value: "L", label: "Real Estat (L)" },
+    { value: "MN", label: "Jasa Perusahaan (MN)" },
+    { value: "O", label: "Administrasi Pemerintahan, Pertahanan, dan Jaminan Sosial Wajib (O)" },
+    { value: "P", label: "Jasa Pendidikan (P)" },
+    { value: "Q", label: "Jasa Kesehatan dan Kegiatan Sosial (Q)" },
+    { value: "RSTU", label: "Jasa Lainnya (RSTU)" },
+];
+
+const pdrbTypeOptions: IndicatorOption[] = [
+    { value: "pengeluaran", label: "Pengeluaran" },
+    { value: "lapangan-usaha", label: "Lap. Usaha" },
+];
+
+const pdrbTooltipStyle = {
+    backgroundColor: "var(--card)",
+    border: "1px solid rgba(139, 92, 246, 0.28)",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px rgba(76, 29, 149, 0.12)",
+};
 
 const AnalyticsChart: React.FC = () => {
 
-    // handler untuk pemilihan dan grafik PDRB
-    const optionsPDRBExp = [
-        { value: "KonsumsiRumahTangga", label: "Konsumsi Rumah Tangga" },
-        { value: "KonsumsiLNPRT", label: "Konsumsi Lembaga Non Profit Rumah Tangga" },
-        { value: "KonsumsiPemerintah", label: "Konsumsi Pemerintah" },
-        { value: "PMTB", label: "Pembentukan Modal tetap Bruto" },
-        { value: "PerubahanInventori", label: "Perubahan Inventori" },
-        { value: "Ekspor", label: "Ekspor Barang Jasa" },
-        { value: "NetEkspor", label: "Net Ekspor" }
-        ];
+    const [selectedPdrbType, setSelectedPdrbType] = useState<"pengeluaran" | "lapangan-usaha">("pengeluaran");
     const [selectedPdrbExp, setSelectedPdrbExp] = useState<ExpKey>('KonsumsiRumahTangga');
-      
-    const [isOpenPdrbExp, setIsOpenPdrbExp] = useState(false);
-    const [triggerPosPdrbExp, setTriggerPosPdrbExp] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
-    const triggerRefPdrbExp = useRef<HTMLDivElement>(null);
-    const dropdownRefPdrbExp = useRef<HTMLUListElement>(null);
-    
-    const toggleDropdownPdrb = () => {setIsOpenPdrbExp((prev) => !prev);};
-    const handleSelectPdrb = (value: string) => {
-        setSelectedPdrbExp(value as ExpKey);
-        setIsOpenPdrbExp(false);
+    const [selectedPdrbLu, setSelectedPdrbLu] = useState<SectorKey>('A');
+    const { referenceYear } = useReferenceYear();
+    const { pdrbExp: dataPdrbExp, pdrbLu: dataPdrbLu } = useDashboardData();
+    const isLapanganUsaha = selectedPdrbType === "lapangan-usaha";
+    const selectedIndicator = isLapanganUsaha ? selectedPdrbLu : selectedPdrbExp;
+    const indicatorOptions = isLapanganUsaha ? optionsPDRBLu : optionsPDRBExp;
+    const visiblePdrbData = (isLapanganUsaha ? dataPdrbLu : dataPdrbExp)
+      .filter((item) => item.Tahun <= referenceYear);
+
+    const handleIndicatorChange = (value: string) => {
+      if (isLapanganUsaha) setSelectedPdrbLu(value as SectorKey);
+      else setSelectedPdrbExp(value as ExpKey);
     };
-
-    useEffect(() => {
-        if (isOpenPdrbExp && triggerRefPdrbExp.current) {
-            const rect = triggerRefPdrbExp.current.getBoundingClientRect();
-            setTriggerPosPdrbExp({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
-                width: rect.width,
-            });
-        }
-    }, [isOpenPdrbExp]);
-    
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target=e.target as Node;
-            if (!triggerRefPdrbExp.current?.contains(target) &&
-            !dropdownRefPdrbExp.current?.contains(target)) {
-                setIsOpenPdrbExp(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-    
-    // handler untuk pemilihan dan grafik indikator sosial ekonomi
-    const [isOpenSoceko, setIsOpenSoceko] = useState(false);
-    const [triggerPosSoceko, setTriggerPosSoceko] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
-    const triggerRefSoceko = useRef<HTMLDivElement>(null);
-    const dropdownRefSoceko = useRef<HTMLUListElement>(null);
-    
-    const [selectedSoceko, setSelectedSoceko] = useState<string>('P0');
-    const optionsSoceko = ["P0","TPT","PE","Gini"];
-
-    const toggleDropdownSoceko = () => {setIsOpenSoceko((prev) => !prev);};
-    const handleSelectSoceko = (value: string) => {
-        setSelectedSoceko(value);
-        setIsOpenSoceko(false);
-    };
-
-        useEffect(() => {
-        if (isOpenSoceko && triggerRefSoceko.current) {
-            const rect = triggerRefSoceko.current.getBoundingClientRect();
-            setTriggerPosSoceko({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
-                width: rect.width,
-            });
-        }
-    }, [isOpenSoceko]);
-    
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target=e.target as Node;
-            if (!triggerRefSoceko.current?.contains(target) &&
-            !dropdownRefSoceko.current?.contains(target)) {
-                setIsOpenSoceko(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     // Function to format large numbers (e.g., 10000 -> 10k)
     const kFormatter = (num:number) => {
     return Math.abs(num) > 999 ? ((Math.abs(num) / 1000)).toString() + "RB" : (num * Math.abs(num)).toString();
     };
 
-    const namaExpDummy = selectedPdrbExp;
-    const namaExpList: Record<string, string> = {
-        'KonsumsiRumahTangga':'Konsumsi RT',
-        'KonsumsiPemerintah':'Konsumsi Pemerintah',
-        'KonsumsiLNPRT':'Konsumsi LNPRT',
-        'PMTB':'PMTB',
-        'PerubahanInventori':'Perubahan Inventori',
-        'NetEkspor':'Net Ekspor'
-    };
-
-    const namaExp = namaExpList[namaExpDummy] || namaExpDummy;
     return ( 
     <>
-    <div className='mt-[0%] grid grid-cols-5 grid-rows-1 gap-5'>
-        <Card className='w-full col-span-3 col-start-1 bg-blue-50/60 backdrop-filter backdrop-blur-md'>
+    <div className='grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)]'>
+        <Card className='min-w-0 bg-violet-50 transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md dark:bg-violet-950/40 dark:hover:border-violet-700'>
             <CardHeader>
-                <div className='grid grid-col-1 grid-row-2 gap-y-2 bg-white/50 backdrop-filter backdrop-blur-md border-1 border-blue-100 rounded-md mt-[-2.5%]'>
-                    <div className='ml-[1%] mt-[1%]'>
-                        <CardTitle className='text-[#168ad8ff]'>PDRB Kabupaten Merangin (Milyar Rupiah)</CardTitle>
+                <div className="grid gap-1 rounded-lg border border-violet-100 bg-white/70 p-3 dark:border-violet-900/60 dark:bg-slate-900/60">
+                    <div className="min-w-0">
+                        <CardTitle className="text-base text-violet-800 dark:text-violet-200">PDRB Kabupaten Merangin (Miliar Rupiah)</CardTitle>
                     </div>
-                    <div className='ml-[1%] mb-[1%]'>
+                    <div className="min-w-0">
                         {/* <CardDescription>{namaExp}</CardDescription> */}
-                        <CardDescription>PDRB Kabupaten Merangin Menurut Pengeluaran</CardDescription>
+                        <CardDescription>PDRB Kabupaten Merangin Menurut {isLapanganUsaha ? "Lapangan Usaha" : "Pengeluaran"}</CardDescription>
                     </div>
                 </div>
-                <div
-                    ref={triggerRefPdrbExp}
-                    onClick={toggleDropdownPdrb}
-                    className="w-full p-2 border border-white bg-[#168ad8ff] text-white cursor-pointer select-none rounded  flex justify-between items-center"
-                >
-                    <span> {optionsPDRBExp.find(opt => opt.value === selectedPdrbExp)?.label || 'Pilih Kategori PDRB'} </span>
-                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                <div className="grid min-w-0 grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
+                    <IndicatorSelect
+                        id="jenis-pdrb-ekonomi"
+                        label="Pilih jenis PDRB: lapangan usaha atau pengeluaran"
+                        value={selectedPdrbType}
+                        options={pdrbTypeOptions}
+                        onValueChange={(value) => setSelectedPdrbType(value as "pengeluaran" | "lapangan-usaha")}
+                        color="lavender"
+                        compact
+                    />
+                    <IndicatorSelect
+                        id="indikator-pdrb-ekonomi"
+                        label={isLapanganUsaha ? "Pilih sektor lapangan usaha PDRB" : "Pilih komponen PDRB menurut pengeluaran"}
+                        value={selectedIndicator}
+                        options={indicatorOptions}
+                        onValueChange={handleIndicatorChange}
+                        color="lavender"
+                        compact
+                    />
                 </div>
-                {isOpenPdrbExp && createPortal(
-                    <ul
-                    ref={dropdownRefPdrbExp}
-                    className="absolute z-50 bg-[#168ad8ff] text-white border border-white rounded shadow-md max-h-50 overflow-y-auto"
-                    style={{
-                        top: triggerPosPdrbExp.top,
-                        left: triggerPosPdrbExp.left,
-                        width: triggerPosPdrbExp.width,
-                    }}
-                    >
-                    {optionsPDRBExp.map((opt) => (
-                    <li
-                        key={opt.value}
-                        onClick={() => handleSelectPdrb(opt.value)}
-                        className="px-4 py-2 hover:bg-white hover:text-black cursor-pointer"
-                    >
-                        {opt.label}
-                    </li>
-                    ))}
-                    </ul>,
-                    document.body
-                )}
             </CardHeader>
             <CardContent>
-                <div style={{width:'100%', height:300}}>
-                    <ResponsiveContainer height={300}>
-                        <AreaChart width={500} height={300} data={dataPdrb} margin={{bottom:25,left:10}}>
+                    <div className="h-[18rem] w-full min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart width={500} height={300} data={visiblePdrbData} margin={{bottom:25,left:10}}>
                             <defs>
                                 <linearGradient id="pdrb" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.97}/>
-                                    <stop offset="95%" stopColor="#168ad8ff" stopOpacity={0}/>
+                                    <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.82}/>
+                                    <stop offset="58%" stopColor="#c4b5fd" stopOpacity={0.4}/>
+                                    <stop offset="100%" stopColor="#ede9fe" stopOpacity={0.08}/>
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid stroke='#ccc' />
-                            <XAxis dataKey='Tahun' style={{fill: "#168ad8ff"}}>
+                            <XAxis
+                                dataKey='Tahun'
+                                style={{fill: "#6d28d9"}}
+                                tick={{fill: "#6d28d9", fontSize: 12}}
+                                axisLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                                tickLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                            >
                                 <Label value="Tahun" angle={0} position="insideBottom"                                         
                                         dx={0}
                                         dy={25}
                                         style={{
                                         textAnchor: "middle",
                                         fontSize: "100%",
-                                        fill: "#168ad8ff",
+                                        fill: "#6d28d9",
                                     }}        
                                 />
                             </XAxis>
-                            <YAxis style={{fill: "#168ad8ff"}} tickFormatter={kFormatter} tick={{fontSize: 12}}>
+                            <YAxis
+                                style={{fill: "#6d28d9"}}
+                                tickFormatter={kFormatter}
+                                tick={{fill: "#6d28d9", fontSize: 12}}
+                                axisLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                                tickLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                            >
                                 <Label value="Milyar Rupiah" angle={-90} position="insideLeft" 
                                         dx={-10}
                                         style={{
                                         textAnchor: "middle",
                                         fontSize: "100%",
-                                        fill: "#168ad8ff",
+                                        fill: "#6d28d9",
                                     }}        
                                 />
                             </YAxis>
-                            <Tooltip />
+                            <Tooltip
+                                contentStyle={pdrbTooltipStyle}
+                                labelStyle={{color: "var(--card-foreground)", fontWeight: 600}}
+                                itemStyle={{color: "#6d28d9"}}
+                            />
                             <Area
                                 type="monotone"
-                                dataKey={selectedPdrbExp}
-                                stroke="#8884d8"
+                                dataKey={selectedIndicator}
+                                stroke="#7c3aed"
+                                strokeWidth={2.5}
                                 fillOpacity={1}
                                 fill="url(#pdrb)"
                             />
@@ -209,9 +174,16 @@ const AnalyticsChart: React.FC = () => {
                 </div>
             </CardContent>
         </Card>
-        <StatPdrb selectedPdrbExp={selectedPdrbExp} setSelectedPdrbExp={setSelectedPdrbExp}/>
+        <div className="grid min-w-0 content-start gap-4">
+            {isLapanganUsaha ? (
+                <StatPdrbLu selectedPdrb={selectedPdrbLu} referenceYear={referenceYear}/>
+            ) : (
+                <StatPdrb selectedPdrbExp={selectedPdrbExp} referenceYear={referenceYear}/>
+            )}
+            <PdrbBreakdownChart pdrbType={selectedPdrbType} referenceYear={referenceYear} />
         </div>
-        < br/>
+        </div>
+        <LaborAnalytics />
     </> 
 );
 }

@@ -5,10 +5,10 @@ import RegisterForm from '@/app/(auth)/auth/RegisterForm';
 const AuthTabs = () => {
     return (
         <>
-            <Tabs defaultValue="login" className="w-[400px]">
+            <Tabs defaultValue="login" className="w-full max-w-md">
                 <TabsList className='grid w-full grid-cols-2'>
-                    <TabsTrigger value="login">Login</TabsTrigger>
-                    <TabsTrigger value="register">Register</TabsTrigger>
+                    <TabsTrigger value="login">Masuk</TabsTrigger>
+                    <TabsTrigger value="register">Daftar</TabsTrigger>
                 </TabsList>
                 <TabsContent value="login">
                     <LoginForm />

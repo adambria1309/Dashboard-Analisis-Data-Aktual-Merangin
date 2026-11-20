@@ -34,7 +34,11 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/(main)/economics",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-preview/types/**/*.ts",
+    ".next-preview/dev/types/**/*.ts",
+    ".next-live-preview/types/**/*.ts",
+    ".next-live-preview/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -16,28 +16,27 @@ interface PostsTableProps {
     title?: string;
 };
 
+const sortedPosts: Post[] = [...posts].sort(
+    (a, b) => Date.parse(b.date) - Date.parse(a.date),
+);
+
 const PostsTable = ({limit, title}: PostsTableProps) => {
-    // Sort posts in decending order based on date
-    const sortedPosts: Post[] = [...posts].sort((a, b) => new Date(
-        b.date).getTime() - new Date(a.date).getTime());
-    
-    // Filter posts to limit
     const filteredPosts = limit ? sortedPosts.slice(0, limit) : sortedPosts;
     
     return (
         <>
             <div className='mt-10'>
                 <h3 className="text-2xl mb-4 font-semibold">
-                    { title ? title:'Posts'}
+                    { title ? title:'Posting'}
                 </h3>
                 <Table>
-                    <TableCaption>A List of Recent Posts</TableCaption>
+                    <TableCaption>Daftar posting terbaru</TableCaption>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead className='hidden md:table-cell'>Author</TableHead>
-                            <TableHead className='hidden md:table-cell text-right'>Date</TableHead>
-                            <TableHead>View</TableHead>
+                            <TableHead>Judul</TableHead>
+                            <TableHead className='hidden md:table-cell'>Penulis</TableHead>
+                            <TableHead className='hidden text-right md:table-cell'>Tanggal</TableHead>
+                            <TableHead>Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -47,10 +46,11 @@ const PostsTable = ({limit, title}: PostsTableProps) => {
                                 <TableCell className='hidden md:table-cell'>{post.author}</TableCell>
                                 <TableCell className='text-right hidden md:table-cell'>{post.date}</TableCell>
                                 <TableCell>
-                                    <Link href={`/posts/edit/${post.id}`}>
-                                        <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-xs'>
-                                            Edit
-                                        </button>
+                                    <Link
+                                        href={`/posts/edit/${post.id}`}
+                                        className='inline-flex min-h-9 items-center rounded-md bg-sky-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 dark:bg-sky-500 dark:hover:bg-sky-400'
+                                    >
+                                        Ubah
                                     </Link>
                                 </TableCell>
                             </TableRow>

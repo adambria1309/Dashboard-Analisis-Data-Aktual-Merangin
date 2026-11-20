@@ -1,142 +1,179 @@
 "use client";
 
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Lato } from 'next/font/google';
-import Image from 'next/image';
-import DADAM from '@/img/DADAM.svg';
-import encourage from'@/img/iconEncouraging.png';
-import { ChevronDown } from "lucide-react";
-import { useState, useEffect } from 'react';
-// import { motion } from "framer-motion";
+import { DotLottieReact, type DotLottie } from "@lottiefiles/dotlottie-react";
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronDown, ArrowRight, BarChart3, MapPinned, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import DADAM from "@/img/DADAM.svg";
+import encourage from "@/img/iconEncouraging.png";
 
-const lato = Lato({
-  subsets:['latin'],
-  weight:"300",
-  style:"italic"
-});
+const features = [
+  {
+    icon: BarChart3,
+    title: "Data yang mudah dipahami",
+    description: "Ikuti perkembangan ekonomi dan sosial-kependudukan melalui ringkasan yang jelas.",
+  },
+  {
+    icon: MapPinned,
+    title: "Informasi berbasis wilayah",
+    description: "Jelajahi indikator Merangin melalui grafik dan peta interaktif.",
+  },
+  {
+    icon: Sparkles,
+    title: "Eksplorasi yang praktis",
+    description: "Temukan konteks utama data daerah dalam satu dashboard.",
+  },
+];
 
 export default function Home() {
   const [showArrow, setShowArrow] = useState(true);
+  const [dotLottie, setDotLottie] = useState<DotLottie | null>(null);
+  const heroRef = useRef<HTMLElement>(null);
 
-  // Smooth scroll down
-  const handleScroll = () => {
-    const section = document.getElementById("next-section");
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  // Hide arrow after scrolling down
   useEffect(() => {
-    const handleScrollEvent = () => {
-      if (window.scrollY > 50) {
-        setShowArrow(false);
-      } else {
-        setShowArrow(true);
-      }
-    };
+    const hero = heroRef.current;
+    if (!hero || !("IntersectionObserver" in window)) return;
 
-    window.addEventListener("scroll", handleScrollEvent);
-    return () => window.removeEventListener("scroll", handleScrollEvent);
+    const observer = new IntersectionObserver(([entry]) => {
+      setShowArrow(entry.isIntersecting);
+    }, { threshold: 0.2 });
+
+    observer.observe(hero);
+    return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!dotLottie) return;
+
+    if (showArrow) dotLottie.play();
+    else dotLottie.pause();
+  }, [dotLottie, showArrow]);
+
+  const handleScroll = () => {
+    document.getElementById("next-section")?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  };
 
   return (
     <>
-      <div className="relative min-h-screen flex flex-col justify-center items-center">  
-        <div className='grid grid-rows-1 grid-cols-2 gap-10'>
-          <div className='mt-[0vh] ml-[-13vw]'>
-            <Image src={DADAM} alt='DADAM' width={800} />
-            {/* <div className={roboto.className}>
-              <h1 className='text-[10rem] text-left font-poppins'>DADAM</h1>
-            </div> */}
-              <br />
-            <h3 className='ml-[2.5%] text-[1rem] text-justify'>BPS Kabupaten Merangin kini hadir dengan sistem <i>dashboard</i> yang dapat 
-              digunakan untuk mengeksplor perkembangan kondisi Kabupaten Merangin secara lebih interaktif dan informatif.</h3>
+      <section
+        ref={heroRef}
+        className="relative isolate flex min-h-[calc(100svh-7rem)] items-center overflow-hidden bg-gradient-to-b from-sky-50 via-white to-slate-50 px-4 py-16 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 sm:px-8 md:min-h-[calc(100svh-4rem)] lg:px-12"
+      >
+        <div className="pointer-events-none absolute -left-24 top-12 -z-10 size-72 rounded-full bg-gradient-to-br from-sky-200/50 via-sky-100/20 to-transparent dark:from-sky-700/25 dark:via-sky-800/10" />
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+          <div className="max-w-2xl">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">
+              BPS Kabupaten Merangin
+            </p>
+            <Image
+              src={DADAM}
+              alt="DADAM — Dashboard Analisis Data Aktual Merangin"
+              width={555}
+              height={161}
+              priority
+              sizes="(min-width: 1024px) 555px, 90vw"
+              className="h-auto w-full max-w-[555px]"
+            />
+            <h1 className="mt-6 text-3xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-4xl lg:text-5xl">
+              Kenali perkembangan Kabupaten Merangin melalui data.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
+              Dashboard interaktif untuk membantu pemerintah dan masyarakat memahami kondisi
+              ekonomi, tenaga kerja, kemiskinan, dan kependudukan Merangin.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/summary"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 dark:bg-sky-500 dark:hover:bg-sky-400"
+              >
+                Buka ringkasan <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+              <Link
+                href="/economics"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-sky-400 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                Lihat dashboard ekonomi
+              </Link>
+            </div>
           </div>
-          <div className='w-[100%] mt-[-10vh]'>
+
+          <div className="mx-auto w-full max-w-xl" aria-hidden="true">
             <DotLottieReact
-            src="https://lottie.host/2c0a47bd-ad4b-4917-b47d-e11862d4798b/nEeDDeOgOt.lottie"
-            loop
-            autoplay
-            width="100%"
-            height="100%"
+              src="https://lottie.host/2c0a47bd-ad4b-4917-b47d-e11862d4798b/nEeDDeOgOt.lottie"
+              loop
+              autoplay={false}
+              dotLottieRefCallback={setDotLottie}
+              style={{ width: "100%", height: "auto", aspectRatio: "1 / 1" }}
             />
           </div>
         </div>
-        {/* Scroll Arrow */}
+
         {showArrow && (
           <button
+            type="button"
             onClick={handleScroll}
-            className="absolute left-[30vw] bottom-25 animate-bounce text-blue-600 dark:text-blue-300 hover:text-blue-800 transition"
+            aria-label="Gulir ke pengenalan dashboard"
+            className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 motion-safe:animate-bounce rounded-full p-2 text-sky-700 transition-colors hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 dark:text-sky-300 dark:hover:bg-slate-800 sm:inline-flex"
           >
-            <ChevronDown size={48} strokeWidth={2.5} />
+            <ChevronDown aria-hidden="true" size={32} strokeWidth={2.5} />
           </button>
         )}
-      </div>
+      </section>
 
-      {/* Next Section */}
-      <div
+      <section
         id="next-section"
-        className="min-h-screen ml-[-22%] w-auto pt-[8%] pl-[2%] pr-[2%] pb-[0%]"
+        className="scroll-mt-20 bg-gradient-to-br from-fuchsia-700 via-blue-700 to-sky-700 px-4 py-16 text-white sm:px-8 lg:py-24"
       >
-        <div 
-          className="grid grid-rows-1 grid-cols-2 gap-5 w-[100%] h-[100vh] rounded-xl mt-[-5%] pl-[5%] pr-[5%] pb-0"   
-          style={{background: "linear-gradient(90deg, #dd5ed9ff 0%, #3c75e0ff 100%)"}}
-        >
-          <div className="flex justify-between items-center">
-            
-            <Image src={encourage} alt='Encouraging' width={500}/>
-            {/* First Lottie */}
-            {/* <motion.div
-              initial={{ x: "-100%", opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: false, amount: 0.1 }} // re-triggers on every scroll into view
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="relative w-full max-w-[450px] aspect-square ml-[-10%]"
-            >
-              <DotLottieReact
-                src="https://lottie.host/7d79e464-2829-4831-8a79-2bbd49711d86/tfWL2CiRfX.lottie"
-                loop
-                autoplay
-                style={{ width: "110%", height: "110%" }}
-              />
-            </motion.div> */}
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div className="mx-auto w-full max-w-lg">
+            <Image
+              src={encourage}
+              alt=""
+              width={600}
+              height={600}
+              sizes="(min-width: 1024px) 40vw, 90vw"
+              className="h-auto w-full rounded-3xl object-contain"
+            />
           </div>
-          <div className='grid '>
-            <div className="mr-[-18%]">
-              <Card className="rounded-tl-none rounded-tr-4xl rounded-br-4xl rounded-bl-4xl w-full bg-blue-100/50 backdrop-filter backdrop-blur-md dark:bg-blue-800 h-[25vh] w-[100%] pr-2 pl-2 mt-[3%] ml-[-12%]">
-                  <CardContent>
-                    <h2 className="{`${lato.variable} font-sans`} text-justify text-3xl text-[#ffffff]">
-                      Ingin mempelajari kondisi perekonomian dan sosial-kependudukan 
-                      Kabupaten Merangin terkini?
-                    </h2>
-                  </CardContent>
-              </Card>
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-100">
+              Data Merangin, lebih dekat
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+              Pahami kondisi daerah dengan cara yang lebih menarik.
+            </h2>
+            <div className="mt-8 grid gap-4">
+              {features.map(({ icon: Icon, title, description }, index) => (
+                <article
+                  key={title}
+                  className="flex gap-4 rounded-2xl border border-white/20 bg-white/10 p-5 shadow-sm transition-colors hover:bg-white/15"
+                >
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-sky-100">
+                    <Icon aria-hidden="true" className="size-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-sky-100">
+                      0{index + 1}
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold">{title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-blue-50">{description}</p>
+                  </div>
+                </article>
+              ))}
             </div>
-            <div className="rounded-md mr-[-18%]">
-              <Card className="rounded-tl-none rounded-tr-4xl rounded-br-4xl rounded-bl-4xl w-full bg-blue-100/50 backdrop-filter backdrop-blur-md dark:bg-blue-800 h-[25vh] w-[100%] pr-2 pl-2 mt-[0%] ml-[-12%]">
-                  <CardContent>
-                    <h2 className="{`${lato.variable} font-sans`} text-justify text-3xl text-[#ffffff]">
-                      Rasakan pengalaman eksplorasi data pereokonomian dan sosial-kependudukan
-                      secara ringkas dan menarik
-                    </h2>
-                  </CardContent>
-              </Card>
-            </div>
-            <div className="rounded-md mr-[-18%]">
-              <Card className="rounded-tl-none rounded-tr-4xl rounded-br-4xl rounded-bl-4xl w-full bg-blue-100/50 backdrop-filter backdrop-blur-md dark:bg-blue-800 h-[25vh] w-[100%] pr-2 pl-2 mt-[0%] ml-[-12%]">
-                  <CardContent>
-                    <h2 className="{`${lato.variable} font-sans`} text-justify text-3xl text-[#ffffff]">
-                      Data perekonomian dan sosial-kependudukan kini disajikan dengan grafik dan 
-                      peta yang interaktif
-                    </h2>
-                  </CardContent>
-              </Card>
-            </div>
+            <Link
+              href="/summary#demografi"
+              className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/40 px-5 py-3 text-sm font-semibold transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              Jelajahi data sosial-kependudukan
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
           </div>
         </div>
-      </div>
+      </section>
     </>
   );
-};
+}

@@ -49,7 +49,6 @@ const EditPostForm = ({ post }: EditPostFormProps) => {
 
   const handleSubmit = (data: FormValues) => {
     toast(`Updated by ${data.author} on ${data.date}.`);
-    console.log('Updated Data:', data);
   };
 
   return (

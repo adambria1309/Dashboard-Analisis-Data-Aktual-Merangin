@@ -1,302 +1,299 @@
 'use client';
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Label} from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Label} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader,CardTitle} from '@/components/ui/card';
-import dataPdrb from '@/data/pdrb_lu';
-import dataSoceko from '@/data/socioeko';
 import dataMap from '@/data/jambi_kecamatan.json';
 import type {Topology} from 'topojson-specification';
-import { sectorKeys, SectorKey } from '@/types/sectorkey';
-import StatPdrb from './StatPdrbLu';
+import type { SectorKey } from '@/types/sectorkey';
+import type { ExpKey } from '@/types/expkey';
+import StatPdrbLu from './StatPdrbLu';
+import StatPdrbExp from '@/components/economics/StatPdrb';
 import MapStat from "./MapStat";
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom'; //render componnent di 'body' sehingga tidak terpengaruh dengan tailwind dan shadcn ui
+import TopSectorShareChart from "./TopSectorShareChart";
+import { useState } from 'react';
+import IndicatorSelect, { type IndicatorOption } from '@/components/IndicatorSelect';
+import { useReferenceYear } from '@/components/ReferenceYearContext';
+import { useDashboardData } from '@/components/DashboardDataContext';
 
-// interface Props {
-//     selectedPdrb: string;
-//     setSelectedPdrb: (value: string) => void;
-//     selectedSoceko: string;
-//     setSelectedSoceko: (value: string) => void;
-// }
+const optionsPDRB: IndicatorOption[] = [
+    { value: "A", label: "Pertanian, Kehutanan, dan Perikanan (A)" },
+    { value: "B", label: "Pertambangan dan Penggalian (B)" },
+    { value: "C", label: "Industri Pengolahan (C)" },
+    { value: "D", label: "Pengadaan Listrik dan Gas (D)" },
+    { value: "E", label: "Pengadaan Air, Pengelolaan Sampah, Limbah, dan Daur Ulang (E)" },
+    { value: "F", label: "Konstruksi (F)" },
+    { value: "G", label: "Perdagangan Besar dan Eceran; Reparasi Mobil dan Sepeda Motor (G)" },
+    { value: "H", label: "Transportasi dan Pergudangan (H)" },
+    { value: "I", label: "Penyediaan Akomodasi dan Makan Minum (I)" },
+    { value: "J", label: "Informasi dan Komunikasi (J)" },
+    { value: "K", label: "Jasa Keuangan dan Asuransi (K)" },
+    { value: "L", label: "Real Estat (L)" },
+    { value: "MN", label: "Jasa Perusahaan (MN)" },
+    { value: "O", label: "Administrasi Pemerintahan, Pertahanan, dan Jaminan Sosial Wajib (O)" },
+    { value: "P", label: "Jasa Pendidikan (P)" },
+    { value: "Q", label: "Jasa Kesehatan dan Kegiatan Sosial (Q)" },
+    { value: "RSTU", label: "Jasa Lainnya (RSTU)" },
+];
+
+const optionsPDRBExp: IndicatorOption[] = [
+    { value: "KonsumsiRumahTangga", label: "Konsumsi Rumah Tangga" },
+    { value: "KonsumsiLNPRT", label: "Konsumsi LNPRT" },
+    { value: "KonsumsiPemerintah", label: "Konsumsi Pemerintah" },
+    { value: "PMTB", label: "Pembentukan Modal Tetap Bruto" },
+    { value: "PerubahanInventori", label: "Perubahan Inventori" },
+    { value: "Ekspor", label: "Ekspor Barang dan Jasa" },
+    { value: "NetEkspor", label: "Net Ekspor" },
+];
+
+const pdrbTypeOptions: IndicatorOption[] = [
+    { value: "pengeluaran", label: "Pengeluaran" },
+    { value: "lapangan-usaha", label: "Lap. Usaha" },
+];
+
+const optionsSoceko: IndicatorOption[] = [
+    { value: "P0", label: "Persentase Kemiskinan (P0)" },
+    { value: "TPT", label: "Tingkat Pengangguran Terbuka (TPT)" },
+    { value: "PE", label: "Pertumbuhan Ekonomi (PE)" },
+    { value: "Gini", label: "Rasio Gini" },
+];
+
+const pdrbTooltipStyle = {
+    backgroundColor: "var(--card)",
+    border: "1px solid rgba(139, 92, 246, 0.28)",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px rgba(76, 29, 149, 0.12)",
+};
+
+const socialTooltipStyle = {
+    backgroundColor: "var(--card)",
+    border: "1px solid rgba(34, 197, 94, 0.28)",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px rgba(20, 83, 45, 0.12)",
+};
 
 const AnalyticsChart: React.FC = () => {
-
-    // handler untuk pemilihan dan grafik PDRB
-    const optionsPDRB = [
-        { value: "A", label: "Pertanian, Kehutanan, dan Perikanan (A)" },
-        { value: "B", label: "Pertambangan dan Penggalian (B)" },
-        { value: "C", label: "Industri Pengolahan (C)" },
-        { value: "D", label: "Pengadaan Listrik dan Gas (D)" },
-        { value: "E", label: "Pengadaan Air, Pengelolaan Sampah, Limbah, dan Daur Ulang (E)" },
-        { value: "F", label: "Konstruksi (F)" },
-        { value: "G", label: "Perdagangan Besar dan Eceran; Reparasi Mobil dan Sepeda Motor (G)" },
-        { value: "H", label: "Transportasi dan Pergudangan (H)" },
-        { value: "I", label: "Penyediaan Akomodasi dan Makan Minum (I)" },
-        { value: "J", label: "Informasi dan Komunikasi (J)" },
-        { value: "K", label: "Jasa Keuangan dan Asuransi (K)" },
-        { value: "L", label: "Real Estat (L)" },
-        { value: "MN", label: "Jasa Perusahaan (MN)" },
-        { value: "O", label: "Administrasi Pemerintahan, Pertahanan, dan Jaminan Sosial Wajib (O)" },
-        { value: "P", label: "Jasa Pendidikan (P)" },
-        { value: "Q", label: "Jasa Kesehatan dan Kegiatan Sosial (Q)" },
-        { value: "RSTU", label: "Jasa Lainnya (RSTU)" }
-        ];
     const [selectedPdrb, setSelectedPdrb] = useState<SectorKey>('A');
-      
-    const [isOpenPdrb, setIsOpenPdrb] = useState(false);
-    const [triggerPosPdrb, setTriggerPosPdrb] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
-    const triggerRefPdrb = useRef<HTMLDivElement>(null);
-    const dropdownRefPdrb = useRef<HTMLUListElement>(null);
-    
-    const toggleDropdownPdrb = () => {setIsOpenPdrb((prev) => !prev);};
-    const handleSelectPdrb = (value: string) => {
-        setSelectedPdrb(value as SectorKey);
-        setIsOpenPdrb(false);
-    };
-
-    useEffect(() => {
-        if (isOpenPdrb && triggerRefPdrb.current) {
-            const rect = triggerRefPdrb.current.getBoundingClientRect();
-            setTriggerPosPdrb({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
-                width: rect.width,
-            });
-        }
-    }, [isOpenPdrb]);
-    
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target=e.target as Node;
-            if (!triggerRefPdrb.current?.contains(target) &&
-            !dropdownRefPdrb.current?.contains(target)) {
-                setIsOpenPdrb(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-    
-    // handler untuk pemilihan dan grafik indikator sosial ekonomi
-    const [isOpenSoceko, setIsOpenSoceko] = useState(false);
-    const [triggerPosSoceko, setTriggerPosSoceko] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
-    const triggerRefSoceko = useRef<HTMLDivElement>(null);
-    const dropdownRefSoceko = useRef<HTMLUListElement>(null);
-    
-    const [selectedSoceko, setSelectedSoceko] = useState<string>('P0');
-    const optionsSoceko = ["P0","TPT","PE","Gini"];
-
-    const toggleDropdownSoceko = () => {setIsOpenSoceko((prev) => !prev);};
-    const handleSelectSoceko = (value: string) => {
-        setSelectedSoceko(value);
-        setIsOpenSoceko(false);
-    };
-
-        useEffect(() => {
-        if (isOpenSoceko && triggerRefSoceko.current) {
-            const rect = triggerRefSoceko.current.getBoundingClientRect();
-            setTriggerPosSoceko({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
-                width: rect.width,
-            });
-        }
-    }, [isOpenSoceko]);
-    
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target=e.target as Node;
-            if (!triggerRefSoceko.current?.contains(target) &&
-            !dropdownRefSoceko.current?.contains(target)) {
-                setIsOpenSoceko(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-    
-    //untuk map
-    const svgRef = useRef<SVGSVGElement>(null);
+    const [selectedPdrbExp, setSelectedPdrbExp] = useState<ExpKey>('KonsumsiRumahTangga');
+    const [selectedPdrbType, setSelectedPdrbType] = useState<"pengeluaran" | "lapangan-usaha">("lapangan-usaha");
+    const [selectedSoceko, setSelectedSoceko] = useState("P0");
+    const { referenceYear } = useReferenceYear();
+    const { pdrbLu: dataPdrbLu, pdrbExp: dataPdrbExp, socioeko: dataSoceko, demografiByYear } = useDashboardData();
+    const isLapanganUsaha = selectedPdrbType === "lapangan-usaha";
+    const indicatorOptions = isLapanganUsaha ? optionsPDRB : optionsPDRBExp;
+    const selectedIndicator = isLapanganUsaha ? selectedPdrb : selectedPdrbExp;
+    const selectedIndicatorLabel = indicatorOptions.find((option) => option.value === selectedIndicator)?.label;
+    const visiblePdrbData = isLapanganUsaha
+        ? dataPdrbLu.filter((item) => item.Tahun <= referenceYear)
+        : dataPdrbExp
+            .filter((item) => item.Tahun <= referenceYear)
+            .map((item) => ({ ...item, [selectedPdrbExp]: item[selectedPdrbExp] / 1000 }));
+    const visibleSocekoData = dataSoceko.filter((item) => item.Tahun <= referenceYear);
     const TypedDataMap: Topology = dataMap as unknown as Topology;
+
+    const handlePdrbIndicatorChange = (value: string) => {
+        if (isLapanganUsaha) setSelectedPdrb(value as SectorKey);
+        else setSelectedPdrbExp(value as ExpKey);
+    };
 
     return ( 
     <>
-    <div className='mt-[0%] grid grid-cols-5 grid-rows-1 gap-5'>
-        <Card className='w-full col-span-3 col-start-1 bg-blue-50/60 backdrop-filter backdrop-blur-md'>
+    <div className='grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)]'>
+        <Card className='min-w-0 bg-violet-50 transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md dark:bg-violet-950/40 dark:hover:border-violet-700 lg:h-[32rem] xl:h-[30.5rem]'>
             <CardHeader>
-                <div className='grid grid-col-1 grid-row-2 gap-y-2 bg-white/50 backdrop-filter backdrop-blur-md border-1 border-blue-100 rounded-md mt-[-2.5%]'>
-                    <div className='ml-[1%] mt-[1%]'>
-                        <CardTitle className='text-[#168ad8ff]'>PDRB Kabupaten Merangin (Milyar Rupiah)</CardTitle>
+                <div className="grid gap-1 rounded-lg border border-violet-100 bg-white/70 p-3 dark:border-violet-900/60 dark:bg-slate-900/60">
+                    <div className="min-w-0">
+                        <CardTitle className="text-base text-violet-800 dark:text-violet-200">PDRB Kabupaten Merangin (Miliar Rupiah)</CardTitle>
                     </div>
-                    <div className='ml-[1%] mb-[1%]'>
-                        <CardDescription>Sektor {selectedPdrb}</CardDescription>
+                    <div className="min-w-0">
+                        <CardDescription>
+                            {isLapanganUsaha ? `Lapangan usaha · ${selectedIndicatorLabel ?? selectedPdrb}` : `Pengeluaran · ${selectedIndicatorLabel ?? selectedPdrbExp}`}
+                        </CardDescription>
                     </div>
                 </div>
-                <div
-                    ref={triggerRefPdrb}
-                    onClick={toggleDropdownPdrb}
-                    className="w-full p-2 border border-white bg-[#168ad8ff] text-white cursor-pointer select-none rounded  flex justify-between items-center"
-                >
-                    <span> {optionsPDRB.find(opt => opt.value === selectedPdrb)?.label || 'Pilih Kategori PDRB'} </span>
-                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                <div className="grid min-w-0 grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
+                    <IndicatorSelect
+                        id="jenis-pdrb-ringkasan"
+                        label="Pilih jenis PDRB: lapangan usaha atau pengeluaran"
+                        value={selectedPdrbType}
+                        options={pdrbTypeOptions}
+                        onValueChange={(value) => setSelectedPdrbType(value as "pengeluaran" | "lapangan-usaha")}
+                        color="lavender"
+                        compact
+                    />
+                    <IndicatorSelect
+                        id="indikator-pdrb-ringkasan"
+                        label={isLapanganUsaha ? "Pilih sektor lapangan usaha PDRB" : "Pilih komponen PDRB menurut pengeluaran"}
+                        value={selectedIndicator}
+                        options={indicatorOptions}
+                        onValueChange={handlePdrbIndicatorChange}
+                        color="lavender"
+                        compact
+                    />
                 </div>
-                {isOpenPdrb && createPortal(
-                    <ul
-                    ref={dropdownRefPdrb}
-                    className="absolute z-50 bg-[#168ad8ff] text-white border border-white rounded shadow-md max-h-50 overflow-y-auto"
-                    style={{
-                        top: triggerPosPdrb.top,
-                        left: triggerPosPdrb.left,
-                        width: triggerPosPdrb.width,
-                    }}
-                    >
-                    {optionsPDRB.map((opt) => (
-                    <li
-                        key={opt.value}
-                        onClick={() => handleSelectPdrb(opt.value)}
-                        className="px-4 py-2 hover:bg-white hover:text-black cursor-pointer"
-                    >
-                        {opt.label}
-                    </li>
-                    ))}
-                    </ul>,
-                    document.body
-                )}
             </CardHeader>
             <CardContent>
-                <div style={{width:'100%', height:300}}>
-                    <ResponsiveContainer height={300}>
-                        <AreaChart width={500} height={300} data={dataPdrb} margin={{bottom:25,left:10}}>
+                    <div className="h-[18rem] w-full min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart width={500} height={300} data={visiblePdrbData} margin={{bottom:25,left:10}}>
                             <defs>
                                 <linearGradient id="pdrb" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.97}/>
-                                    <stop offset="95%" stopColor="#168ad8ff" stopOpacity={0}/>
+                                    <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.82}/>
+                                    <stop offset="58%" stopColor="#c4b5fd" stopOpacity={0.4}/>
+                                    <stop offset="100%" stopColor="#ede9fe" stopOpacity={0.08}/>
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid stroke='#ccc' />
-                            <XAxis dataKey='Tahun' style={{fill: "#168ad8ff"}}>
+                            <XAxis
+                                dataKey='Tahun'
+                                style={{fill: "#6d28d9"}}
+                                tick={{fill: "#6d28d9", fontSize: 12}}
+                                axisLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                                tickLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                            >
                                 <Label value="Tahun" angle={0} position="insideBottom"                                         
                                         dx={0}
                                         dy={25}
                                         style={{
                                         textAnchor: "middle",
                                         fontSize: "110%",
-                                        fill: "#168ad8ff",
+                                        fill: "#6d28d9",
                                     }}        
                                 />
                             </XAxis>
-                            <YAxis style={{fill: "#168ad8ff"}}>
+                            <YAxis
+                                style={{fill: "#6d28d9"}}
+                                tick={{fill: "#6d28d9", fontSize: 12}}
+                                axisLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                                tickLine={{stroke: "#8b5cf6", strokeOpacity: 0.45}}
+                            >
                                 <Label value="Milyar Rupiah" angle={-90} position="insideLeft" 
                                         dx={-5}
                                         style={{
                                         textAnchor: "middle",
                                         fontSize: "110%",
-                                        fill: "#168ad8ff",
+                                        fill: "#6d28d9",
                                     }}        
                                 />
                             </YAxis>
-                            <Tooltip />
+                            <Tooltip
+                                contentStyle={pdrbTooltipStyle}
+                                labelStyle={{color: "var(--card-foreground)", fontWeight: 600}}
+                                itemStyle={{color: "#6d28d9"}}
+                            />
                             <Area
                                 type="monotone"
                                 dataKey={selectedPdrb}
-                                stroke="#8884d8"
+                                stroke="#7c3aed"
+                                strokeWidth={2.5}
                                 fillOpacity={1}
                                 fill="url(#pdrb)"
+                                animationDuration={450}
+                                animationEasing="ease-out"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </CardContent>
         </Card>
-        <StatPdrb selectedPdrb={selectedPdrb} setSelectedPdrb={setSelectedPdrb}/>
+        <div className="grid min-w-0 content-start gap-4 lg:h-[32rem] lg:grid-rows-[17.75rem_minmax(0,1fr)] xl:h-[30.5rem] xl:grid-rows-[14.25rem_minmax(0,1fr)]">
+            {isLapanganUsaha ? (
+                <StatPdrbLu selectedPdrb={selectedPdrb} referenceYear={referenceYear}/>
+            ) : (
+                <StatPdrbExp selectedPdrbExp={selectedPdrbExp} referenceYear={referenceYear}/>
+            )}
+            <TopSectorShareChart referenceYear={referenceYear} />
         </div>
-        < br/>
-        <div className='grid grid-cols-5 grid-rows-1 gap-5 mt-[-1%]'>
-            <Card className='w-full col-span-3 col-start-1 bg-blue-50/60 backdrop-filter backdrop-blur-md'>
+        </div>
+        <div className='mt-5 grid min-w-0 grid-cols-1 items-stretch gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]'>
+            <Card className='h-full min-w-0 bg-emerald-50 transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md dark:bg-emerald-950/30 dark:hover:border-emerald-700'>
                 <CardHeader>
-                    <div className='grid grid-col-1 grid-row-2 gap-y-2 bg-white/50 backdrop-filter backdrop-blur-md border-2 border-blue-100 rounded-md mt-[-2.5%]'>
-                        <div className='ml-[1%] mt-[1%]'>
-                            <CardTitle className='text-[#0ea849ff]'>Indikator Sosial Ekonomi Kabupaten Merangin</CardTitle>
+                    <div className="grid gap-1 rounded-lg border border-emerald-100 bg-white/70 p-3 dark:border-emerald-900/50 dark:bg-slate-900/60">
+                        <div className="min-w-0">
+                        <CardTitle className="text-base text-emerald-800 dark:text-emerald-200">Indikator Sosial Ekonomi Kabupaten Merangin</CardTitle>
                         </div>
-                        <div className='ml-[1%] mb-[1%]'>
+                        <div className="min-w-0">
                             <CardDescription>{selectedSoceko==="P0"?"Persentase Kemiskinan":selectedSoceko==="PE"?"Pertumbuhan Ekonomi":selectedSoceko==="TPT"?"Tingkat Pengangguran Terbuka":selectedSoceko==="Gini"?"Ketimpangan Pendapatan":"-"}</CardDescription>
                         </div>
                     </div>
-                    <div
-                        ref={triggerRefSoceko}
-                        onClick={toggleDropdownSoceko}
-                        className="w-full p-2 border border-white bg-[#0ea849ff] text-white cursor-pointer select-none rounded flex justify-between items-center"
-                    >
-                        <span>{selectedSoceko || 'Pilih Indikator Sosial Ekonomi'}</span>
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                    {isOpenSoceko && createPortal(
-                        <ul
-                        ref={dropdownRefSoceko}
-                        className="z-100 absolute bg-[#0ea849ff] text-white border border-white rounded shadow-md max-h-30 overflow-y-auto"
-                        style={{
-                            top: triggerPosSoceko.top,
-                            left: triggerPosSoceko.left,
-                            width: triggerPosSoceko.width,
-                        }}
-                        >
-                        {optionsSoceko.map((option) => (
-                            <li
-                            key={option}
-                            onClick={() => handleSelectSoceko(option)}
-                            className="px-4 py-2 hover:bg-white hover:text-black cursor-pointer"
-                            >
-                            {option}
-                            </li>
-                        ))}
-                        </ul>, document.body
-                    )}
+                    <IndicatorSelect
+                        id="indikator-sosial-ekonomi"
+                        label="Pilih indikator sosial ekonomi"
+                        value={selectedSoceko}
+                        options={optionsSoceko}
+                        onValueChange={setSelectedSoceko}
+                        color="green"
+                    />
                 </CardHeader>
                 <CardContent>
-                    <div style={{width:'100%', height:300}}>
-                        <ResponsiveContainer height={300}>
-                            <AreaChart width={1100} height={300} data={dataSoceko} margin={{bottom:20,left:10}}>
+                    <div className="h-[clamp(20rem,32vw,24rem)] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart width={1100} height={300} data={visibleSocekoData} margin={{bottom:20,left:10}}>
                                 <defs>
                                     <linearGradient id="socio" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.97}/>
-                                        <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
+                                        <stop offset="0%" stopColor="#4ade80" stopOpacity={0.82}/>
+                                        <stop offset="58%" stopColor="#86efac" stopOpacity={0.38}/>
+                                        <stop offset="100%" stopColor="#dcfce7" stopOpacity={0.08}/>
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid stroke='#ccc' />
-                                <XAxis dataKey='Tahun' style={{fill: "#0ea849ff"}}>
+                                <XAxis
+                                    dataKey='Tahun'
+                                    style={{fill: "#047857"}}
+                                    tick={{fill: "#047857", fontSize: 12}}
+                                    axisLine={{stroke: "#22c55e", strokeOpacity: 0.45}}
+                                    tickLine={{stroke: "#22c55e", strokeOpacity: 0.45}}
+                                >
                                 <Label value="Tahun" angle={0} position="insideBottom"                                         
                                         dx={0}
                                         dy={25}
                                         style={{
                                         textAnchor: "middle",
                                         fontSize: "110%",
-                                        fill: "#0ea849ff",
+                                        fill: "#047857",
                                     }}        
                                 />
                             </XAxis>
-                            <YAxis style={{fill: "#0ea849ff"}}>
+                            <YAxis
+                                style={{fill: "#047857"}}
+                                tick={{fill: "#047857", fontSize: 12}}
+                                axisLine={{stroke: "#22c55e", strokeOpacity: 0.45}}
+                                tickLine={{stroke: "#22c55e", strokeOpacity: 0.45}}
+                            >
                                 <Label value="Persen (%)" angle={-90} position="insideLeft" 
                                         dx={-5}
                                         style={{
                                         textAnchor: "middle",
                                         fontSize: "110%",
-                                        fill: "#0ea849ff",
+                                        fill: "#047857",
                                     }}        
                                 />
                             </YAxis>
-                            <Tooltip />
-                                <Area type="monotone" dataKey={selectedSoceko} stroke="#82ca9d" fillOpacity={1} fill="url(#socio)" />
+                            <Tooltip
+                                contentStyle={socialTooltipStyle}
+                                labelStyle={{color: "var(--card-foreground)", fontWeight: 600}}
+                                itemStyle={{color: "#047857"}}
+                            />
+                                <Area
+                                    type="monotone"
+                                    dataKey={selectedSoceko}
+                                    stroke="#16a34a"
+                                    strokeWidth={2.5}
+                                    fillOpacity={1}
+                                    fill="url(#socio)"
+                                    animationDuration={450}
+                                    animationEasing="ease-out"
+                                />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </CardContent>
             </Card>
-            <div className='col-span-2 col-start-4'>
-                <MapStat topojsonData={TypedDataMap} width={100} height={100}/>
+            <div className='h-full min-w-0'>
+                <MapStat
+                    topojsonData={TypedDataMap}
+                    width={100}
+                    height={100}
+                    demografiData={demografiByYear.get(referenceYear)}
+                    dataYear={referenceYear}
+                />
             </div>
         </div>
     </> 
